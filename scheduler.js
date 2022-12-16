@@ -1,27 +1,32 @@
-function runTask(maxRandomMs=100) {
+function runTask(awaitTime) {
     return new Promise((resolve)=>{
-        const time = Math.floor(Math.random() * maxRandomMs)
-        setInterval(()=>{
-            resolve(time)
-        }, time)
+        const time = awaitTime * 400
+        setTimeout(()=> resolve(time), time)
     })
 }
 
 const run = async () => {
 
+    let registeredCounter = 0
     const finishedIds = []
     const formatedResult = []
 
-    const wrapFinishCounter = async (fn, taskId) => {
-        await fn()
-        let counter = 0
+    const wrapFinishCounter = async (fn, taskId, awaitTime) => {
+        await fn(awaitTime)
+
+        registeredCounter++
+        
+        let hasSomeGreater = false
         for(const id of finishedIds) {
-            if(id < taskId) counter++
+            if(id > taskId) hasSomeGreater = true
         }
 
+        console.log(`task ${taskId} done.`);
+        console.log('>', hasSomeGreater);
+        
         if(finishedIds.length === 0) {
             formatedResult.push(0)
-        } else if (counter + 1 === taskId) {
+        } else if (!hasSomeGreater) {
             formatedResult.push(taskId)
         } else {
             formatedResult.push(-1)
@@ -31,13 +36,10 @@ const run = async () => {
     }
 
     await Promise.all([
-        wrapFinishCounter(runTask,1),
-        wrapFinishCounter(runTask,2),
-        wrapFinishCounter(runTask,3),
-        wrapFinishCounter(runTask,4),
-        wrapFinishCounter(runTask,5),
-        wrapFinishCounter(runTask,6),
-        wrapFinishCounter(runTask,7),
+        wrapFinishCounter(runTask, 0, 0),
+        wrapFinishCounter(runTask, 1, 2),
+        wrapFinishCounter(runTask, 2, 1),
+        wrapFinishCounter(runTask, 3, 3),
     ])
 
     console.log('................');
