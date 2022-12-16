@@ -1,6 +1,6 @@
 function runTask(awaitTime) {
     return new Promise((resolve)=>{
-        const time = awaitTime * 400
+        const time = awaitTime * 20
         setTimeout(()=> resolve(time), time)
     })
 }
@@ -8,31 +8,33 @@ function runTask(awaitTime) {
 const run = async () => {
 
     let registeredCounter = 0
-    const finishedIds = []
-    const formatedResult = []
+    let finishedPosition = 0
+    const finishedPositionMap = new Map()
+    const formatedResultMap = new Map()
 
     const wrapFinishCounter = async (fn, taskId, awaitTime) => {
-        await fn(awaitTime)
-
+        finishedPositionMap.set(taskId, null)
+        formatedResultMap.set(taskId, null)
         registeredCounter++
-        
-        let hasSomeGreater = false
-        for(const id of finishedIds) {
-            if(id > taskId) hasSomeGreater = true
-        }
-
+        await fn(awaitTime)
         console.log(`task ${taskId} done.`);
-        console.log('>', hasSomeGreater);
+
+        const hasSomeGreater = 
+            Array.from(finishedPositionMap.entries())
+                 .map(e=>e[0]).filter(id=>id<taskId)
+                 .map(id=>finishedPositionMap.get(id) !== null)
+                 .every(e=>e)
         
-        if(finishedIds.length === 0) {
-            formatedResult.push(0)
-        } else if (!hasSomeGreater) {
-            formatedResult.push(taskId)
+        if(registeredCounter === 0) {
+            formatedResultMap.set(taskId, 0)
+        } else if (hasSomeGreater) {
+            formatedResultMap.set(taskId, taskId)
         } else {
-            formatedResult.push(-1)
+            formatedResultMap.set(taskId, -1)
         }
 
-        finishedIds.push(taskId)
+        finishedPositionMap.set(taskId, finishedPosition)
+        finishedPosition++
     }
 
     await Promise.all([
@@ -42,9 +44,7 @@ const run = async () => {
         wrapFinishCounter(runTask, 3, 3),
     ])
 
-    console.log('................');
-    console.log('Final order:', finishedIds);
-    console.log('Result:', formatedResult);
+    console.log('Result:', Array.from(formatedResultMap).map(e=>e[1]));
 
 }
 
